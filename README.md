@@ -33,6 +33,7 @@ adapter applies it to a larger model on consumer cards.
 |---|---|
 | `microturn-duplex-lora.gguf` | The adapter in llama.cpp's LoRA format (15 MB, F32, rank 32, alpha 64, 3.83M parameters) |
 | `microturn_client.py` | A text client with no dependencies: you type what the microphone "heard" per tick and see what the model says |
+| `dataset/` | The simulated calls the adapter was trained on, with the written dialogues behind them and their own card ([dataset/README.md](dataset/README.md)) |
 
 ## What it changes
 
@@ -133,10 +134,14 @@ text-to-speech behind it. The model is never told what audio is still playing.
   the longer calls) and timed into 0.6 s ticks with speech-recognition noise added. There are no recordings of real
   people in it. The calls cover questions, stories told in parts, long explanations with the listener reacting or
   cutting in, pauses in the middle of a thought, and dangerous plans the assistant should interrupt.
-- **Loss.** Cross-entropy on the reply tokens with a weight per kind of tick. Most ticks are "the user is talking,
-  stay silent", and without weights the model learns to stay silent always.
+- **Loss.** Cross-entropy on the reply tokens with a weight per kind of tick. Three ticks in four are `<listen>`,
+  and without weights the model learns to stay silent always.
 - **Run.** Rank 32, 282 steps of 4 calls, about 39 seconds per step, AdamW at 2e-4, the first 8,000 tokens of each
   call. About 3 hours on two RTX 3060 12GB.
+
+The data is published in [`dataset/`](dataset/README.md) as a cleaned copy: an audit before release removed 10
+written dialogues, and the 25 training calls built from them, because a reply in them approved something dangerous
+or carried leaked instructions. The adapter was trained before that audit, so it saw those calls.
 
 This is the fifth run. The earlier ones each failed in their own way (one repeated its warning twenty times in a
 row, one said "mm-hm" 950 times where a good listener would have said it 164 times), and the video walks through
@@ -164,8 +169,9 @@ described above (temperature 0, listen threshold 0.3).
 - **Its fillers land in the right spot about a third of the time.**
 - English only. It was trained on text that imitates one speech-to-text model's fragments, so a recogniser with very
   different chunking may behave differently.
-- It is a research demo trained on a few hundred written conversations. Do not rely on it to warn anyone about
-  anything.
+- It is a research demo trained on a few hundred conversations written by language models, and some of the
+  replies in that data give advice that is wrong or unsafe (the dataset card lists the known ones). Do not rely on
+  it to warn anyone about anything, or for safety, medical or legal advice.
 
 ## Licence
 
